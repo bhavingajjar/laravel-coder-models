@@ -221,7 +221,7 @@ def main():
                 continue
 
             sections_by_doc[md_file.name] = sections
-            per_doc_limit = 4 if version == "13.x" else 3
+            per_doc_limit = 6 if version == "13.x" else 5
             for sec in sections[:per_doc_limit]:
                 all_qa.append(make_qa(md_file.name, sec, version))
 

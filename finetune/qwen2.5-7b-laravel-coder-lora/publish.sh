@@ -18,7 +18,7 @@ python3 "$ROOT/shared/build_training_data.py"
 python3 "$FINETUNE/prepare_dataset.py"
 
 if [[ "$SKIP_TRAIN" != "1" ]]; then
-  python3 "$FINETUNE/train_lora_minimal.py"
+  bash "$FINETUNE/train.sh"
   if [[ -f "$FINETUNE/convert_adapter.sh" ]]; then
     bash "$FINETUNE/convert_adapter.sh" "$ADAPTER_SAFE" "$ADAPTER_GGUF" || true
   fi

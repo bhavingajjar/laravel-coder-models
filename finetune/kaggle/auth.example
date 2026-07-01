@@ -1,0 +1,2 @@
+# Copy to .credentials (gitignored) and fill in:
+# export KAGGLE_API_TOKEN="KGAT_..."

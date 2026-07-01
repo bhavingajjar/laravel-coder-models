@@ -11,8 +11,8 @@ SOURCE = ROOT / "shared" / "data" / "laravel_training.jsonl"
 OUT_DIR = Path(__file__).resolve().parent / "data"
 OUT_DIR.mkdir(exist_ok=True)
 
-MAX_TRAIN = 150
-MAX_EVAL = 20
+MAX_TRAIN = 800
+MAX_EVAL = 40
 MIN_OUTPUT_LEN = 120
 
 ANCHOR_ONLY = re.compile(r"^<a name=", re.MULTILINE)

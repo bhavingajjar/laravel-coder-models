@@ -2,53 +2,68 @@
 
 Optional accuracy upgrade via LoRA fine-tuning. **If this fails, use `../modelfile/` — production is unchanged.**
 
-## Upload destination
+## Layout
 
-Fine-tuned models push to **ollama.com** under your account:
+```
+finetune/
+├── train.sh           # auto: local CUDA → kaggle → hf → local CPU
+├── lora/config.env    # shared model + Hub + Kaggle settings
+├── local/             # train on this machine (GPU or CPU)
+├── hf/                # HF Jobs GPU, merge + publish
+├── kaggle/            # Kaggle dataset, GPU kernel, weights publish
+└── data/              # generated JSONL splits
+```
+
+## Quick start
+
+```bash
+cd /var/www/html/ollama
+pip install -r finetune/requirements.txt
+
+# Auto-pick: local CUDA → Kaggle GPU → HF Jobs → local CPU
+bash finetune/train.sh
+
+# Or force one path:
+TRAIN_MODE=local bash finetune/train.sh
+TRAIN_MODE=kaggle bash finetune/train.sh
+TRAIN_MODE=hf bash finetune/train.sh
+```
+
+## Publish to Ollama
+
+```bash
+bash finetune/hf/download_adapter.sh   # only if trained on HF
+bash finetune/convert_adapter.sh
+SKIP_TRAIN=1 ./finetune/qwen2.5-7b-laravel-coder-lora/publish.sh
+```
 
 | Model | URL |
 |-------|-----|
 | Production (modelfile/) | https://ollama.com/bhavingajjar/qwen2.5-7b-laravel-coder |
 | LoRA (finetune/) | https://ollama.com/bhavingajjar/qwen2.5-7b-laravel-coder-lora |
 
-## Pipeline (Qwen first)
+## Hub resources
 
-```bash
-cd /var/www/html/ollama
+| Resource | ID |
+|----------|-----|
+| Dataset | [bhavin-gajjar/laravel-coder-lora-train](https://huggingface.co/datasets/bhavin-gajjar/laravel-coder-lora-train) |
+| Model (merged) | [bhavin-gajjar/qwen-laravel-coder](https://huggingface.co/bhavin-gajjar/qwen-laravel-coder) |
+| Bucket | [bhavin-gajjar/mybucket/laravel-coder-lora-train](https://huggingface.co/buckets/bhavin-gajjar/mybucket/laravel-coder-lora-train) |
 
-# 1. Curate tiny dataset from shared/data/
-python3 finetune/prepare_dataset.py
+Upload datasets only: `bash finetune/hf/upload_datasets.sh`
 
-# 2. Train (CPU — slow on Intel Iris Xe; 16GB+ RAM recommended)
-pip install -r finetune/requirements.txt
-python3 finetune/train_lora_minimal.py
+## Settings
 
-# 3. Convert adapter to GGUF (requires llama.cpp) or use Safetensors path
-bash finetune/convert_adapter.sh
-
-# 4. Evaluate vs modelfile Bob, then publish if LoRA wins
-./finetune/qwen2.5-7b-laravel-coder-lora/publish.sh
-```
-
-## Minimal training settings
-
-| Setting | Value |
-|---------|-------|
-| HF base | `Qwen/Qwen2.5-Coder-7B-Instruct` |
-| Device | CPU (Iris Xe not used for training) |
-| LoRA | r=4, alpha=8, 1 epoch |
-| Data | 50–150 curated pairs |
-
-## Colab fallback
-
-If local CPU is too slow or OOM: train in Google Colab, download adapter to `finetune/qwen2.5-7b-laravel-coder-lora/adapters/`, then run `publish.sh` with `SKIP_TRAIN=1`.
+Edit `finetune/lora/config.env` for `BASE_MODEL`, `HUB_MODEL_ID`, `HF_FLAVOR`, etc.
 
 ## Files
 
-| Script | Purpose |
-|--------|---------|
-| `prepare_dataset.py` | Filter high-quality train/eval JSONL |
-| `train_lora_minimal.py` | CPU PEFT LoRA training |
-| `convert_adapter.sh` | Safetensors → GGUF for Ollama |
+| Path | Purpose |
+|------|---------|
+| `local/train.sh` | Local GPU/CPU training |
+| `hf/run.sh` | HF Jobs GPU training |
+| `hf/upload_datasets.sh` | Push datasets to Hub + bucket |
+| `hf/download_adapter.sh` | Pull adapter from Hub |
+| `prepare_dataset.py` | Curate train/eval JSONL |
+| `convert_adapter.sh` | Safetensors → GGUF |
 | `evaluate.py` | A/B modelfile vs LoRA |
-| `build_lora_modelfile.py` | Generate FROM + ADAPTER Modelfile |
